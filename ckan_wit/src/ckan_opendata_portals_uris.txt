@@ -1,0 +1,10 @@
+https://daten.rlp.de/api/3/action/package_search
+http://www.geodata.gov.gr/api/3/action/package_search
+https://www.datarefuge.org/api/3/action/package_search
+http://dados.ufrn.br/api/3/action/package_search
+https://hri.fi/data/fi/api/3/action/package_search
+http://bermuda.io/api/3/action/package_search
+https://data.buenosaires.gob.ar/api/3/action/package_search
+https://opendata.aragon.es/api/3/action/package_search
+https://www.datos.gov.py/api/3/action/package_search
+http://data.zagreb.hr/api/3/action/package_search

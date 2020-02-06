@@ -1,0 +1,4 @@
+include *.txt
+include README.rst
+include LICENSE.rst
+include ckan_wit/src/ckan_opendata_portals_uris.txt
