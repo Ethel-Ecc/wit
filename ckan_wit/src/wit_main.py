@@ -3,12 +3,13 @@
     It first imports the necessary packages from within python and its environs.
 """
 
-import os
-import fnmatch
+# import os
+# import fnmatch
 import logging
 import aiohttp
 import asyncio
-import requests
+from urllib import request
+from urllib.error import URLError
 
 from . import uris
 from . import proxies
@@ -31,28 +32,24 @@ def verify_acquire():
     If no errors, it has to return:
     :return: "number_of_portals", "verified_portals"
     """
-
     verified_uris = []
+    ckan_standard_interface = "/api/3/action/package_search"
+
+    """ First verify that the URI is a valid URI and it is available"""
+
+    def check_uri_status(uri_):
+        try:
+            uri_resp = request.urlopen(uri_)
+            if uri_resp.code == 200:
+                return uri_
+        except URLError:
+            return logger.error("The URI is not available")
 
     for uri in uris.ckan_opendata_portal_uris:
+        check_uri_status(uri)
+        uri += ckan_standard_interface
+        verified_uris.append(uri)
 
-        """ First verify that the URI is a valid URI and it is available"""
-        uri_status = requests.get(uri)
-
-        if uri_status.status_code == 200:
-
-            """ 
-            Ensure that the CKAN standard Interface is supported and added 
-            to all verified open datata portals 
-            """
-
-            uri += "/api/3/action/package_search"
-            verified_uris.append(uri)
-
-        else:
-            """ Log the errors that occur while doing that """
-
-            logger.exception("ERROR:: The OpenData Portal URI you entered:", uri, "is currently not available.")
     # ckan_filename = []
     # for root, dirs, files in os.walk(path):
     #     for name in files:

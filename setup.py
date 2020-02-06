@@ -12,7 +12,7 @@ with open("README.rst", "r") as fh:
 
 setuptools.setup(
     name="ckan-wit",
-    version="0.0.22",
+    version="0.1.0",
     author="EO",
     author_email="c.obinna@stud.uni-goettingen.de",
     description="A Wrapper Interface Tool (WIT) that verifies, aggregates, and filters metadata infos across CKAN-compatible Open Data"
@@ -25,6 +25,7 @@ setuptools.setup(
     ],
     include_package_data=True,
     zip_safe=False,
+
     classifiers=[
         "Programming Language :: Python :: 3.6",
         "License :: OSI Approved :: MIT License",
