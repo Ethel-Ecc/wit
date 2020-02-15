@@ -3,16 +3,14 @@
     It first imports the necessary packages from within python and its environs.
 """
 
-# import os
-# import fnmatch
 import logging
 import aiohttp
 import asyncio
 from urllib import request
+import requests
 from urllib.error import URLError
-
-from . import uris
-from . import proxies
+from ckan_wit.src import uris
+from ckan_wit.src import proxies
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -23,6 +21,9 @@ file_handler = logging.FileHandler('wit.log')
 file_handler.setFormatter(formatter)
 
 logger.addHandler(file_handler)
+
+newProxy = proxies.ProxySetting('http://proxy.ciss.de:3128').http
+
 
 
 def verify_acquire():
@@ -35,58 +36,23 @@ def verify_acquire():
     verified_uris = []
     ckan_standard_interface = "/api/3/action/package_search"
 
+    # print(newProxy)
     """ First verify that the URI is a valid URI and it is available"""
-
-    def check_uri_status(uri_):
-        try:
-            uri_resp = request.urlopen(uri_)
-            if uri_resp.code == 200:
-                return uri_
-        except URLError:
-            return logger.error("The URI is not available")
-
     for uri in uris.ckan_opendata_portal_uris:
-        check_uri_status(uri)
         uri += ckan_standard_interface
-        verified_uris.append(uri)
+        # print(uri, newProxy)
+        res = requests.get(uri, proxies=newProxy)
+        if res.status_code == 200:
+            verified_uris.append(uri)
+        else:
+            print('API not available')
 
-    # ckan_filename = []
-    # for root, dirs, files in os.walk(path):
-    #     for name in files:
-    #         if fnmatch.fnmatch(name, pattern):
-    #             ckan_filename.append(os.path.join(root, name))
-    #
-    # if ckan_filename:
-    #     ckan_filename = "".join(ckan_filename)
-    #     f = open(ckan_filename, "r")
-    #     f.seek(0)
-    #     check_first_char = f.read(1)
-    #
-    #     if not check_first_char:
-    #         if check_first_char:
-    #             logger.debug("DEBUG ERROR- The content of the File (ckan_opendata_portals_urls.txt) is Empty or begins with a blank space. "
-    #                          "\n\t\t\tPlease delete or blank spaces in the file and restart. or Ensure that you have the recent version of the WIT.")
-    #     else:
-    #         f.seek(0)
-    #         content = f.read().splitlines()
-    #         f.close()
-    #
-    #         try:
-    #             return {"number_of_portals": content.__len__(),
-    #                     "verified_portals": content
-    #                     }
-    #         except FileNotFoundError:
-    #             logger.exception("ERROR:: The File (ckan_opendata_portals_urls.txt) is not Found.\n\t\t\tPlease see the documentation from the github repository for assistance.")
-    #
-    # else:
-    #     logger.info("SUCCESS - All referenced OpenData Portals have been successfully loaded for processing")
-    #
     try:
         return {
             "number_of_portals": len(verified_uris),
             "verified_portals": verified_uris
         }
-    except AttributeError:
+    except URLError:
         logger.exception("ERROR:: The File (ckan_opendata_portals_urls.txt) is not Found.")
         return {
             "ERROR Info": "Please check the log file for details"
@@ -98,6 +64,9 @@ def verify_acquire():
 def ckan_wit_main():
     portals_main = verify_acquire()
     meta = dict()
+
+
+    # print(next(iter(newProxy.values())))
 
     async def fetch(session, portal, proxy):
 
@@ -120,7 +89,7 @@ def ckan_wit_main():
     async def main():
 
         portals = portals_main["verified_portals"]
-        proxy = proxies.proxy_settings()
+        proxy = next(iter(newProxy.values()))
         tasks = list()
 
         async with aiohttp.ClientSession() as session:
@@ -136,11 +105,10 @@ def ckan_wit_main():
                     counter = counter + 1
                     meta[counter] = res
 
-    # loop = asyncio.get_event_loop()
+    # loop = asyncio.new_event_loop()
 
-    loop = asyncio.new_event_loop()
+    loop = asyncio.get_event_loop()
     asyncio.set_event_loop(loop)
-
     loop.run_until_complete(main())
 
     # sleep gracefully
@@ -230,7 +198,7 @@ def aggregate_filter_present(meta):
                             key: {"total_metadata": meta[key]['result']['count'],
                                   "Metadata": {
                                       'num_resources': meta[key]['result']['results'][id_num]['num_resources'],
-                                      'license': meta[key]['result']['results'][id_num]['license_title'],
+                                      'license': meta[key]['result']['results'][id_num]['license_id'],
                                       'resource_group_title': meta[key]['result']['results'][id_num]['title'],
                                       'owner_organization': meta[key]['result']['results'][id_num]['organization']['name'],
                                       'owner_description': meta[key]['result']['results'][id_num]['organization']['description'],

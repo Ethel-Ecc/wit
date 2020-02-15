@@ -3,7 +3,7 @@ import unittest
 import aiohttp
 import asyncio
 
-from wit.ckan_wit.src.wit_main import verify_acquire, proxy_settings
+from ckan_wit.src.wit_main import verify_acquire, proxies
 
 """Test-cases for testing the methods in the wit_module"""
 
@@ -11,11 +11,11 @@ from wit.ckan_wit.src.wit_main import verify_acquire, proxy_settings
 class TestCkanWit(unittest.TestCase):
 
     def test_verify_acquire(self):
-        self.assertTrue(pathlib.Path('ckan_opendata_portals_urls.txt'))
+        self.assertTrue(pathlib.Path('uris.py'))
         self.assertTrue(pathlib.Path('setup.cfg'))
 
     def test_aiohttp_calls(self):
-        portals_main = verify_acquire(pattern="ckan_opendata_*.txt", path="wit/ckan_wit/")
+        portals_main = verify_acquire()
 
         async def fetch(session, portal, proxy):
 
@@ -28,7 +28,7 @@ class TestCkanWit(unittest.TestCase):
         async def main():
 
             portals = portals_main["verified_portals"]
-            proxy = proxy_settings()
+            proxy = proxies.proxy_settings()
             tasks = list()
 
             async with aiohttp.ClientSession() as session:
