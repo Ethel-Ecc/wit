@@ -1,3 +1,7 @@
 .idea
 venv_wit
 wit.log
+dist
+build
+*.egg-info
+
