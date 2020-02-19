@@ -6,7 +6,6 @@
 import logging
 import aiohttp
 import asyncio
-from urllib import request
 import requests
 from urllib.error import URLError
 from ckan_wit.src import uris
@@ -14,16 +13,15 @@ from ckan_wit.src import proxies
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
 formatter = logging.Formatter('%(asctime)s: %(levelname)-5s: \n\t\t\t%(message)s: \n\t\t\t%(pathname)s: \n\t\t\t%(module)s: %(funcName)s\n')
-
 file_handler = logging.FileHandler('wit.log')
 file_handler.setFormatter(formatter)
-
 logger.addHandler(file_handler)
 
-newProxy = proxies.ProxySetting('http://proxy.ciss.de:3128').http
-
+ext_proxy = {
+    'http': proxies.ProxySetting().http_proxy,
+    'https': proxies.ProxySetting().https_proxy
+}
 
 
 def verify_acquire():
@@ -36,16 +34,18 @@ def verify_acquire():
     verified_uris = []
     ckan_standard_interface = "/api/3/action/package_search"
 
-    # print(newProxy)
     """ First verify that the URI is a valid URI and it is available"""
     for uri in uris.ckan_opendata_portal_uris:
         uri += ckan_standard_interface
-        # print(uri, newProxy)
-        res = requests.get(uri, proxies=newProxy)
-        if res.status_code == 200:
-            verified_uris.append(uri)
-        else:
-            print('API not available')
+        try:
+            global res
+            res = requests.get(uri)
+            if res.status_code == 200:
+                verified_uris.append(uri)
+        except res.status_code != 200:
+            res = requests.get(uri, proxies=ext_proxy)
+            if res.status_code == 200:
+                verified_uris.append(uri)
 
     try:
         return {
@@ -64,9 +64,6 @@ def verify_acquire():
 def ckan_wit_main():
     portals_main = verify_acquire()
     meta = dict()
-
-
-    # print(next(iter(newProxy.values())))
 
     async def fetch(session, portal, proxy):
 
@@ -89,7 +86,7 @@ def ckan_wit_main():
     async def main():
 
         portals = portals_main["verified_portals"]
-        proxy = next(iter(newProxy.values()))
+        proxy = next(iter(ext_proxy.values()))
         tasks = list()
 
         async with aiohttp.ClientSession() as session:
@@ -105,9 +102,8 @@ def ckan_wit_main():
                     counter = counter + 1
                     meta[counter] = res
 
-    # loop = asyncio.new_event_loop()
-
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()  # this line is necessary for the edms flask app
+    # loop = asyncio.get_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(main())
 
@@ -120,26 +116,12 @@ def ckan_wit_main():
     if final_results:
         logger.info("SUCCESS - Metadata successfully processed, aggregated, and formatted.\n\t\t\t See the docs on how to get started")
         try:
-            return {
-                "wit_resources": {
-                    "AFRICA": {
-                        "total_metadata": sum(wit_resources["africa"]["total_metadata"]),
-                        "wit_metadata": wit_resources["africa"]["wit_metadata"]
-                    },
-                    "AMERICAS": {
-                        "total_metadata": sum(wit_resources["americas"]["total_metadata"]),
-                        "wit_metadata": wit_resources["americas"]["wit_metadata"]
-                    },
-                    "ASIA": {
-                        "total_metadata": sum(wit_resources["asia"]["total_metadata"]),
-                        "wit_metadata": wit_resources["asia"]["wit_metadata"]
-                    },
-                    "EUROPE": {
-                        "total_metadata": sum(wit_resources["europe"]["total_metadata"]),
-                        "wit_metadata": wit_resources["europe"]["wit_metadata"]
-                    },
-                }
-            }
+            return {"wit_resources": {"AFRICA": {"total_metadata": sum(wit_resources["africa"]["total_metadata"]), "wit_metadata": wit_resources["africa"]["wit_metadata"]},
+                                      "AMERICAS": {"total_metadata": sum(wit_resources["americas"]["total_metadata"]), "wit_metadata": wit_resources["americas"]["wit_metadata"]},
+                                      "ASIA": {"total_metadata": sum(wit_resources["asia"]["total_metadata"]), "wit_metadata": wit_resources["asia"]["wit_metadata"]},
+                                      "EUROPE": {"total_metadata": sum(wit_resources["europe"]["total_metadata"]), "wit_metadata": wit_resources["europe"]["wit_metadata"]},
+                                      }
+                    }
         except KeyError:
             logger.exception("WARNING -  The processing of one or more metadata was not successful.\n\t\tPlease see the logfile for more information")
 
@@ -194,21 +176,24 @@ def aggregate_filter_present(meta):
                             aggregated_results.append(temp_aggregator.copy())
 
                     if "url" in meta[key]['result']['results'][id_num]['resources'][x_val]:
-                        temp2_aggregator.update({
-                            key: {"total_metadata": meta[key]['result']['count'],
-                                  "Metadata": {
-                                      'num_resources': meta[key]['result']['results'][id_num]['num_resources'],
-                                      'license': meta[key]['result']['results'][id_num]['license_id'],
-                                      'resource_group_title': meta[key]['result']['results'][id_num]['title'],
-                                      'owner_organization': meta[key]['result']['results'][id_num]['organization']['name'],
-                                      'owner_description': meta[key]['result']['results'][id_num]['organization']['description'],
+                        try:
+                            temp2_aggregator.update({
+                                key: {"total_metadata": meta[key]['result']['count'],
+                                      "Metadata": {
+                                          'num_resources': meta[key]['result']['results'][id_num]['num_resources'],
+                                          'license': meta[key]['result']['results'][id_num]['license_id'],
+                                          'resource_group_title': meta[key]['result']['results'][id_num]['title'],
+                                          'owner_organization': meta[key]['result']['results'][id_num]['organization']['name'],
+                                          'owner_description': meta[key]['result']['results'][id_num]['organization']['description'],
 
-                                      "wit_resources": {"name": meta[key]['result']['results'][id_num]['resources'][x_val]['name'],
-                                                        "file_format": meta[key]['result']['results'][id_num]['resources'][x_val]['format'],
-                                                        "download_link": meta[key]['result']['results'][id_num]['resources'][x_val][default]
-                                                        }
-                                  }, }
-                        })
+                                          "wit_resources": {"name": meta[key]['result']['results'][id_num]['resources'][x_val]['name'],
+                                                            "file_format": meta[key]['result']['results'][id_num]['resources'][x_val]['format'],
+                                                            "download_link": meta[key]['result']['results'][id_num]['resources'][x_val][default]
+                                                            }
+                                      }, }
+                            })
+                        except TypeError:
+                            pass
 
                         def clearNullNoneValues_2(d):
                             cleared_values_2 = {}

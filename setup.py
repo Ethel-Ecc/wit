@@ -12,13 +12,12 @@ with open("README.rst", "r") as fh:
 
 setuptools.setup(
     name="ckan-wit",
-    version="0.1.0",
+    version="0.1.4",
     author="EO",
     author_email="c.obinna@stud.uni-goettingen.de",
     description="A Wrapper Interface Tool (WIT) that verifies, aggregates, and filters metadata infos across CKAN-compatible Open Data"
                 "portals",
     long_description=long_description,
-    long_description_content_type="text/markdown",
     url="https://ckan-wit-documentation.readthedocs.io/en/latest/",
     packages=setuptools.find_packages(),
     install_requires=[

@@ -13,7 +13,7 @@ ckan_opendata_portal_uris = [
         "http://bermuda.io",
         "https://data.buenosaires.gob.ar",
         "https://opendata.aragon.es",
-        "https://www.datos.gov.py",
+        "http://catalog.data.ug",
         "http://data.zagreb.hr",
     ]
 
