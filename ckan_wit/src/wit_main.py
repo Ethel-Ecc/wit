@@ -18,10 +18,13 @@ file_handler = logging.FileHandler('wit.log')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-ext_proxy = {
-    'http': proxies.ProxySetting().http_proxy,
-    'https': proxies.ProxySetting().https_proxy
-}
+try:
+    ext_proxy = {
+        'http': proxies.ProxySetting().http_proxy,
+        'https': proxies.ProxySetting().https_proxy
+    }
+except KeyError:
+    pass
 
 
 def verify_acquire():

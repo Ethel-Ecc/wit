@@ -12,8 +12,15 @@ import os
 
 
 class ProxySetting:
-    http_proxy = os.environ['HTTP_PROXY']
-    https_proxy = os.environ['HTTPS_PROXY']
+
+    try:
+        http_proxy = os.getenv('HTTP_PROXY')
+        https_proxy = os.getenv('HTTPS_PROXY')
+
+    except KeyError:
+
+        http_proxy = None
+        https_proxy = None
 
     def __init__(self, http_proxy=http_proxy, https_proxy=https_proxy):
         self.http_proxy = http_proxy
