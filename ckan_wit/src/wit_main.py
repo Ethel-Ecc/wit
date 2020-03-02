@@ -123,6 +123,9 @@ def ckan_wit_main():
                                       "AMERICAS": {"total_metadata": sum(wit_resources["americas"]["total_metadata"]), "wit_metadata": wit_resources["americas"]["wit_metadata"]},
                                       "ASIA": {"total_metadata": sum(wit_resources["asia"]["total_metadata"]), "wit_metadata": wit_resources["asia"]["wit_metadata"]},
                                       "EUROPE": {"total_metadata": sum(wit_resources["europe"]["total_metadata"]), "wit_metadata": wit_resources["europe"]["wit_metadata"]},
+                                      "overall_total": sum(wit_resources["africa"]["total_metadata"]) + sum(wit_resources["americas"]["total_metadata"]) + sum(wit_resources[
+                                                                                                                                                                   "asia"][
+                                                                                                                                                                   "total_metadata"]) + sum(wit_resources["europe"]["total_metadata"])
                                       }
                     }
         except KeyError:
